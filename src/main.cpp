@@ -2,76 +2,46 @@
 
 //! Development file of Taruga. Will be deleted once this is no longer a WIP.
 
-#include <string>
-#include <cstdio>
-#include <vector>
+//! Draws a Sierpinski fractal
+void draw_spierpinski(taruga::Turtle& t, const int length, int depth)
+{
+    if(depth == 0)
+    {
+        for(int i = 0; i < 3; i++)
+        {
+            t.forward(length);
+            t.turn_left(120);
+        }
+        return;
+    }
+    draw_spierpinski(t, length/2, depth-1);
+    t.forward(length/2);
+    draw_spierpinski(t, length/2, depth-1);
+    t.backwards(length/2);
+    t.turn_left(60);
+    t.forward(length/2);
+    t.turn_right(60);
+    draw_spierpinski(t, length/2, depth-1);
+    t.turn_left(60);
+    t.backwards(length/2);
+    t.turn_right(60);
+}
 
-taruga::Turtle turtle;
 
 int main()
 {
     taruga::Turtle turtle;
 
-    std::vector<sf::Color> colors = {sf::Color::Red, sf::Color::Blue, sf::Color::Green, sf::Color::Yellow};
+    int size = 1;
+    while (size <= 250)
+    {
+        turtle.forward(size);
+        turtle.turn_right(91);
+        size++;
+    }
 
-    turtle.forward(70);
-    turtle.turn_left(90);
-    turtle.forward(70);
-    turtle.turn_left(90);
-    turtle.forward(70);
-    turtle.turn_left(90);
-    turtle.pen_up();
-    turtle.forward(70);
-    turtle.turn_left(90);
-
+    turtle.save_to_image("screenshot.png");
     turtle.act();
 
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//int main()
-//{
-
-//    sf::Image img;
-//    img.loadFromFile("../ruga/turtle.png");
-
-//    const uint8_t * imgptr = img.getPixelsPtr();
-
-//    FILE * turtlebin = fopen("turtle.hpp", "w");
-//    const size_t x = img.getSize().x;
-//    const size_t y = img.getSize().y;
-//    fprintf(turtlebin, "#ifndef __TURTLE_IMG_HPP\n");
-//    fprintf(turtlebin, "#define __TURTLE_IMG_HPP\n\n");
-//    fprintf(turtlebin, "const uint8_t turtle[%lu] = {", 4*x*y);
-//    for(size_t i = 0; i < 4*x*y-1; i++)
-//    {
-//        fprintf(turtlebin, "%hhu, ", imgptr[i]);
-//    }
-//    fprintf(turtlebin, "%hhu};", imgptr[4*x*y-1]);
-//    fprintf(turtlebin, "#endif\n");
-//    fclose(turtlebin);
-
-//    return 0;
-//}
