@@ -5,16 +5,33 @@
 
 #include "include/taruga.hpp"
 
-// Icon: https://www.flaticon.com/authors/freepik, Flaticon licensed
+//! Development file of Taruga. Will be deleted once this is no longer a WIP.
 
 #include <string>
 #include <cstdio>
 #include <vector>
 
+taruga::Turtle turtle;
+
+void recursive_koch(int length, int depth)
+{
+    if (depth == 0)
+    {
+        turtle.forward(length); return;
+    }
+    recursive_koch(length, depth-1);
+    turtle.turn_right(60);
+    recursive_koch(length, depth-1);
+    turtle.turn_left(120);
+    recursive_koch(length, depth-1);
+    turtle.turn_right(60);
+    recursive_koch(length, depth-1);
+}
+
 int main()
 {
-    taruga::Turtle turtle;
     turtle.verbosity = taruga::Verbosity::VeryVerbose;
+    recursive_koch(10, 2);
 
     //! Draw a square
 //    turtle.turn_right(90);
@@ -25,14 +42,6 @@ int main()
 //    turtle.forward(50);
 //    turtle.turn_right(90);
 //    turtle.forward(50);
-
-    int size = 1;
-    while (size <= 500)
-    {
-        turtle.forward(size);
-        turtle.turn_right(91);
-        size++;
-    }
 
     turtle.act();
 
