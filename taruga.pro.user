@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.12.1, 2020-10-10T23:30:18. -->
+<!-- Written by QtCreator 4.12.1, 2020-10-11T12:29:59. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -306,8 +306,9 @@
     </valuelist>
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:/media/anderson/82913e6d-e865-4017-a067-91ae15c0af28/gitkraken/repos/ruga/taruga.pro</value>
-    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">/media/anderson/82913e6d-e865-4017-a067-91ae15c0af28/gitkraken/repos/ruga/taruga.pro</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">taruga2</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:/media/anderson/82913e6d-e865-4017-a067-91ae15c0af28/gitkraken/repos/taruga/taruga.pro</value>
+    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">/media/anderson/82913e6d-e865-4017-a067-91ae15c0af28/gitkraken/repos/taruga/taruga.pro</value>
     <value type="QString" key="RunConfiguration.Arguments"></value>
     <value type="bool" key="RunConfiguration.Arguments.multi">false</value>
     <value type="QString" key="RunConfiguration.OverrideDebuggerStartup"></value>

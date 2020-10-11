@@ -35,6 +35,11 @@
 #include <cmath>
 #include <queue>
 
+//! TODO:
+//! Decide whether or not to include a second built-in icon
+//! Make sure lines before drawn are still drawn once the pen goes up. (That is, old ones remains, but no new ones come up)
+//! ?? Test more
+
 //! Holds a 32x32 PNG cute turtle icon
 static const uint8_t __turtle_png[1479] = {
     0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
@@ -176,6 +181,9 @@ enum class Icon : bool {
 //!
 //! \brief The Verbosity enum defines the different options for console output verbosity
 //!
+
+typedef uint8_t u8;
+
 enum class Verbosity : uint8_t {
     Quiet       = 1,
     Verbose     = 2,
@@ -189,19 +197,18 @@ enum class Verbosity : uint8_t {
 enum class Instruction : uint8_t {
     Rotate,                   //! Rotates the turtle by a given amount of degrees
     Walk,                     //! Walks forwards (or backwards) by the given amount of units.
-    PenUp,                    //! Sets the pen up, so the turtle will walk but its path will not be drawn.
-    PenDown,                  //! Sets the pen down, as to draw the line when the turtle walks
-    SpriteChangeColor,        //! Change the icon color to something else
+    PenMovement,              //! Puts the pen up or down.
     LineChangeColor,          //! Change the line color to something else
+    //SpriteChangeColor,        //! Change the icon color to something else
     // Stamp,           //! Permanently stamp the sprite at the current position and rotation
 };
-
 
 union ActionData {
     float  rot_angle;              //! Used when rotating
     int32_t  walk_dist;            //! Used when walking forwards or backwards
-    //sf::Vector2u next_pos;        //! Used for teleports (sets the turtle directly in next_pos)
-    //sf::Color next_color;         //! Used when changing icon color
+    //sf::Vector2u next_pos;       //! Used for teleports (sets the turtle directly in next_pos)
+    uint8_t next_color[3];         //! Used when changing icon color. Using an array here because sf::Color has non-trivial default constructor.
+    bool pen_down;                 //! Used when setting the pen up or down.
 };
 
 //!
@@ -219,8 +226,10 @@ struct Action {
 struct Line
 {
     float xi, yi, xf, yf;
-    Line(float _xi, float _yi, float _xf, float _yf) : xi(_xi), yi(_yi), xf(_xf), yf(_yf) {};
+    sf::Color color;
     Line(float _xi, float _yi) : xi(_xi), yi(_yi) {};
+    Line(float _xi, float _yi, float _xf, float _yf, sf::Color c) : xi(_xi), yi(_yi), xf(_xf), yf(_yf), color(c) {};
+    Line(float _xi, float _yi, sf::Color c) : xi(_xi), yi(_yi), color(c) {};
 };
 
 class Turtle{
@@ -233,14 +242,16 @@ private:
     std::queue<Action> actions;          //! The queue of actions that the turtle is going to do.
     sf::Texture        texture;          //! The image to be used on the sprite. Kept in VRAM.
     sf::Sprite         sprite;           //! The turtle's sprite.
-    bool               pen_down;         //! If the pen is up, the turtle will not draw while walking around
+    sf::Color          line_color;       //! The current color of the line the turtle draws
+    bool               m_pen_down;       //! If the pen is up, the turtle will not draw while walking around
     uint8_t            walk_spd;         //! Turtle's current velocity
     float              angle;            //! Turtle's current heading angle in [0, 360)
     float              rot_vel;          //! Turtle's rotational velocity
     uint16_t           width;            //! Rendering window width
     uint16_t           height;           //! Rendering window height
-    uint16_t           x, y;             //! Current positions
+    uint32_t           x, y;             //! Current positions
 
+    void               _move_pen(bool);  //! Sets the pen up or down
     void               _draw_line(Line); //! Draws the given line
     void               _draw_sprite();   //! Draws the sprite into the window
     void               _idle();          //! Keeps rendering a static scene. Runs when there are no more actions to do.
@@ -254,6 +265,11 @@ public:
     Turtle()                             : width(800),  height(600)  { init(); }
     Turtle(uint16_t _wth, uint16_t _hgt) : width(_wth), height(_hgt) { init(); }
     Turtle(const sf::Vector2u p)         : width(p.x),  height(p.y)  { init(); }
+    void set_line_color(sf::Color);    //! Sets the new color of the line the turtle will draw.
+    void set_line_color(u8, u8, u8);   //! Sets the new color of the line the turtle will draw.
+    void set_line_color(u8[3]);        //! Sets the new color of the line the turtle will draw.
+    void pen_up();                     //! Sets the pen up so lines don't get drawn
+    void pen_down();                   //! Sets the pen down so that the turtle draws a line wherever it walks
     void set_icon(Icon);               //! Allows to switch around between the two built-in icons: turtle or straight arrow.
     void set_icon(sf::Texture);        //! Allows for any image to be used as an icon. Do notice that Taruga won't scale the texture. If needed, use the Turtle::scale method.
     void scale(float, float);          //! Scales the turtle sprite
@@ -261,11 +277,43 @@ public:
     void backwards(int32_t units);     //! Walk backwards the given amount of units. The same as using forward() with a negative parameter.
     void turn_right(float ang);        //! Turns right by the specified amount of degrees.
     void turn_left(float ang);         //! Turns left by the specified amount of degrees.
-    void dot();                        //! Print a dot in the current position, even if the pen is up.
+    //void dot();                        //! Print a dot in the current position, even if the pen is up.
     void draw_circle();                //! Draw a circle at the current position
     void act();                        //! Start moving the turtle. Will deplete the actions queue.
 };
 
+void Turtle::_move_pen(bool m_pen_down)
+{
+    ActionData data; data.pen_down = m_pen_down;
+    actions.push(Action(Instruction::PenMovement, data));
+}
+
+void Turtle::pen_up()
+{
+    this->_move_pen(false);
+}
+
+void Turtle::pen_down()
+{
+    this->_move_pen(true);
+}
+
+void Turtle::set_line_color(sf::Color color)
+{
+    this->set_line_color(color.r, color.g, color.b);
+}
+
+void Turtle::set_line_color(u8 r, u8 g, u8 b)
+{
+    ActionData data;
+    data.next_color[0] = r; data.next_color[1] = g; data.next_color[2] = b;
+    actions.push(Action(Instruction::LineChangeColor, data));
+}
+
+void Turtle::set_line_color(u8 color[3])
+{
+    this->set_line_color(color[0], color[1], color[2]);
+}
 
 void Turtle::turn_left(float deg)
 {
@@ -303,8 +351,8 @@ void Turtle::_draw_all_lines(bool clear_screen)
             sf::Vertex(sf::Vector2f(line.xi, line.yi)),
             sf::Vertex(sf::Vector2f(line.xf, line.yf))
         };
-        line_vertices[0].color = sf::Color::Black;
-        line_vertices[1].color = sf::Color::Black;
+        line_vertices[0].color = line.color;
+        line_vertices[1].color = line.color;
         window.draw(line_vertices, 2, sf::Lines);
     }
 }
@@ -313,15 +361,18 @@ void Turtle::_draw_line(Line new_line)
 {
     _draw_all_lines();
 
-    sf::Vertex line_vertices[2] = {
-        sf::Vertex(sf::Vector2f(new_line.xi, new_line.yi)),
-        sf::Vertex(sf::Vector2f(new_line.xf, new_line.yf))
-    };
+    if (m_pen_down)
+    {
+        sf::Vertex line_vertices[2] = {
+            sf::Vertex(sf::Vector2f(new_line.xi, new_line.yi)),
+            sf::Vertex(sf::Vector2f(new_line.xf, new_line.yf))
+        };
 
-    line_vertices[0].color = sf::Color::Black;
-    line_vertices[1].color = sf::Color::Black;
+        line_vertices[0].color = new_line.color;
+        line_vertices[1].color = new_line.color;
 
-    window.draw(line_vertices, 2, sf::Lines);
+        window.draw(line_vertices, 2, sf::Lines);
+    }
 }
 
 void Turtle::_draw_sprite()
@@ -383,9 +434,9 @@ void Turtle::_walk(int32_t distance)
         fprintf(stderr, "Turtle::_walk(%d) started. Current pos: (%d, %d). Current angle: %f\n", distance, this->x, this->y, angle);
     }
 
-    const float ang_rad = angle*m_deg_to_rad;
+    const float ang_rad = angle*m_deg_to_rad;   //! Converts the current angle to radians
 
-    const sf::Vector2f ep (x + sin(ang_rad) * distance, y - cos(ang_rad) * distance); //! Final point
+    const sf::Vector2f ep (x + sin(ang_rad) * distance, y - cos(ang_rad) * distance); //! ep := the final point
 
     float x_spd = 0., y_spd = 0.f;   //! The speed in which the turtle will walk in the x and y direction
     int   x_iters = 0, y_iters = 0;  //! How many times we'll update each coordinate
@@ -409,7 +460,7 @@ void Turtle::_walk(int32_t distance)
 
     y_iters = std::abs((y - ep.y)/walk_spd);
 
-    Line line(x, y);
+    Line line(x, y, this->line_color);
 
     //! TODO: use the same formula used on `ep` to calculate middle-steps
     while((x_iters >= 0) || (y_iters >= 0))
@@ -425,9 +476,10 @@ void Turtle::_walk(int32_t distance)
     sprite.setPosition(ep); //! The loop above only gets us close to the correct end-point, so we'll get there correctly now
     _draw_sprite();
 
-    lines.push_back(line);
-
-    fprintf(stderr, "endpoint = (%f, %f)\n", ep.x, ep.y);
+    if (m_pen_down) {
+        //! We don't need to save this line if the pen wasn't down
+        lines.push_back(line);
+    }
 
     if(verbosity >= Verbosity::VeryVerbose){
         fprintf(stderr, "Turtle::_walk(%d) finished. Current pos: (%d, %d).\n", distance, this->x, this->y);
@@ -443,9 +495,10 @@ void Turtle::init()
     this->x          = width/2;
     this->y          = height/2;
     this->rot_vel    = 0.5;
-    this->pen_down   = true;
+    this->m_pen_down   = true;
     this->walk_spd   = 1;
     this->angle      = 0;
+    this->line_color = sf::Color::Black;
 }
 
 //!
@@ -453,6 +506,7 @@ void Turtle::init()
 //!
 void Turtle::_idle()
 {
+    //! TODO: check for window events here
     for (;;) { _draw_all_lines(); window.draw(sprite); window.display(); }
 }
 
@@ -481,17 +535,11 @@ void Turtle::set_icon(Icon icon)
 }
 
 
-void Turtle::act(){
-
-//    while(!actions.empty())
-//    {
-//        Action c = actions.front(); actions.pop();
-//        fprintf(stderr, "angle: %f\n", c.data.rot_angle);
-//    }
-//    exit(0);
-
-
-
+//!
+//! \brief Turtle::act runs through the action queue and animates the turtle
+//!
+void Turtle::act()
+{
     if (title.empty())
     {
         title = "Ruga Window";
@@ -517,7 +565,6 @@ void Turtle::act(){
         //sprite.setColor(sf::Color(0, 255, 0)); // green
 
         sprite.setPosition(x, y);
-//        auto bounds = sprite.getLocalBounds();
 
         //! _idle until user closes the window
         if(actions.empty()) { _idle(); } //! TODO: check events within _idle
@@ -534,16 +581,15 @@ void Turtle::act(){
         case Instruction::Walk:
             _walk(current.data.walk_dist);
             break;
-        case Instruction::PenUp:
-            pen_down = false;
-            break;
-        case Instruction::PenDown:
-            pen_down = true;
+        case Instruction::PenMovement:
+            m_pen_down = current.data.pen_down;
             break;
         case Instruction::LineChangeColor:
+            const auto newc = current.data.next_color;
+            this->line_color = sf::Color(newc[0], newc[1], newc[2]);
             break;
-        case Instruction::SpriteChangeColor:
-            break;
+//        case Instruction::SpriteChangeColor:
+//            break;
         }
     }
 }

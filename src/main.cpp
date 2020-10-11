@@ -1,8 +1,3 @@
-#include <SFML/Graphics/Texture.hpp>
-#include <SFML/Graphics/Sprite.hpp>
-#include <SFML/Graphics/RenderWindow.hpp>
-#include <SFML/Window/Event.hpp>
-
 #include "include/taruga.hpp"
 
 //! Development file of Taruga. Will be deleted once this is no longer a WIP.
@@ -13,35 +8,21 @@
 
 taruga::Turtle turtle;
 
-void recursive_koch(int length, int depth)
-{
-    if (depth == 0)
-    {
-        turtle.forward(length); return;
-    }
-    recursive_koch(length, depth-1);
-    turtle.turn_right(60);
-    recursive_koch(length, depth-1);
-    turtle.turn_left(120);
-    recursive_koch(length, depth-1);
-    turtle.turn_right(60);
-    recursive_koch(length, depth-1);
-}
-
 int main()
 {
-    turtle.verbosity = taruga::Verbosity::VeryVerbose;
-    recursive_koch(10, 2);
+    taruga::Turtle turtle;
 
-    //! Draw a square
-//    turtle.turn_right(90);
-//    turtle.forward(50);
-//    turtle.turn_right(90);
-//    turtle.forward(50);
-//    turtle.turn_right(90);
-//    turtle.forward(50);
-//    turtle.turn_right(90);
-//    turtle.forward(50);
+    std::vector<sf::Color> colors = {sf::Color::Red, sf::Color::Blue, sf::Color::Green, sf::Color::Yellow};
+
+    turtle.forward(70);
+    turtle.turn_left(90);
+    turtle.forward(70);
+    turtle.turn_left(90);
+    turtle.forward(70);
+    turtle.turn_left(90);
+    turtle.pen_up();
+    turtle.forward(70);
+    turtle.turn_left(90);
 
     turtle.act();
 
