@@ -8,11 +8,19 @@ Taruga is a work in progress single-header turtle graphics library written in C+
 
 ## Examples
 
+### Drawing a Spierpinski fractal
+
+![Sierpinski](https://user-images.githubusercontent.com/36349314/95699821-e2950780-0c1b-11eb-8fa9-15b2e913ecc5.png)
+
+With the simple Turtle directives, we can build complex fractals!
+
+Full source code for this example can be found [here](examples/spiral.cpp).
+
 ### Drawing a spiral 
 
 ![Spiral](https://user-images.githubusercontent.com/36349314/95693453-c6d13780-0c02-11eb-9d4e-5d3b3467899e.png)
 
-We can draw this spiral by simply moving forward and then turning to the right by slightly over a right angle. 
+We can draw this spiral by simply moving forward and then turning to the right by slightly over 90°.
 
 ```cpp
     int size = 1;
@@ -99,3 +107,4 @@ The public methods that `taruga::Turtle` exposes are:
 The code contained in this repo is [MIT](https://opensource.org/licenses/MIT)-licensed.
 Turtle icon made by Freepik, available under the [Flaticon](https://www.flaticon.com/) license. 
 SFML is [zlib/libpng](https://opensource.org/licenses/Zlib)-licensed
+

@@ -1,7 +1,5 @@
 #include "include/taruga.hpp"
 
-//! Development file of Taruga. Will be deleted once this is no longer a WIP.
-
 //! Draws a Sierpinski fractal
 void draw_spierpinski(taruga::Turtle& t, const int length, int depth)
 {
@@ -31,21 +29,9 @@ void draw_spierpinski(taruga::Turtle& t, const int length, int depth)
 int main()
 {
     taruga::Turtle turtle;
-    turtle.verbosity = taruga::Verbosity::VeryVerbose;
-
-//    for(int i = 0; i < 36; i++)
-//    {
-//        turtle.turn_right(10*i);
-//        turtle.forward(50);
-//        turtle.backwards(50);
-//        turtle.turn_left(10*i);
-//    }
-
 
     turtle.turn_right(90);
     draw_spierpinski(turtle, 200, 3);
-
-    turtle.save_to_image("screenshot.png");
     turtle.act();
 
     return 0;

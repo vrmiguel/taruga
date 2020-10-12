@@ -236,7 +236,7 @@ struct Line
 
 class Turtle{
 private:
-    static constexpr float m_deg_to_rad = 3.14159265358979323846/180.0;
+    static constexpr double m_deg_to_rad = 3.14159265358979323846/180.0;
     void init();                         //! Initializes the variables with their default values
     std::vector<Line>  lines;            //! All lines to be drawn.
     sf::RenderWindow   window;           //! Window where the scene will be rendered
@@ -245,6 +245,7 @@ private:
     sf::Texture        texture;          //! The image to be used on the sprite. Kept in VRAM.
     sf::Sprite         sprite;           //! The turtle's sprite.
     sf::Color          line_color;       //! The current color of the line the turtle draws
+    sf::Event          event;            //! Checks for window events
     bool               m_pen_down;       //! If the pen is up, the turtle will not draw while walking around
     uint8_t            walk_spd;         //! Turtle's current velocity
     float              angle;            //! Turtle's current heading angle in [0, 360)
@@ -440,9 +441,9 @@ void Turtle::_rotate(float deg)
     this->angle += this->angle < 0      ? 360. : 0.; //! If the angle is negative, we make it positive again
     this->angle -= this->angle >= 360.0 ? 360. : 0.; //! Likewise, we must decrease the angle if it's too big
 
-    if(verbosity >= Verbosity::VeryVerbose)
+    if(verbosity == Verbosity::VeryVerbose)
     {
-        fprintf(stderr, "Turtle::_rotate(%.2f) finished. Current angle: %.2f.\n", deg, this->angle);
+        fprintf(stderr, "Turtle::_rotate(%.2f) finished. Current angle: %.2f. Current pos.: (%d, %d)\n", deg, this->angle, this->x, this->y);
     }
 }
 
@@ -506,7 +507,7 @@ void Turtle::_walk(int32_t distance)
         lines.push_back(line);
     }
 
-    if(verbosity >= Verbosity::VeryVerbose){
+    if(verbosity == Verbosity::VeryVerbose){
         fprintf(stderr, "Turtle::_walk(%d) finished. Current pos: (%d, %d).\n", distance, this->x, this->y);
     }
 }
@@ -575,13 +576,17 @@ void Turtle::act()
         set_icon(Icon::Turtle);
     }
 
-//    fprintf(stderr, "\nStarting act() with actions.size() = %ld\n", actions.size());
+    if(verbosity >= Verbosity::Verbose)
+    {
+        fprintf(stderr, "\nStarting act() with actions.size() = %ld\n", actions.size());
+    }
+
+    sprite.setPosition(x, y);
 
     window.create(sf::VideoMode(width, height), title);
 
     while (window.isOpen())
     {
-        sf::Event event;
         while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed) { window.close(); }
