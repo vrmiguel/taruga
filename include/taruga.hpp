@@ -575,7 +575,7 @@ void Turtle::act()
         set_icon(Icon::Turtle);
     }
 
-    fprintf(stderr, "\nStarting act() with actions.size() = %ld\n", actions.size());
+//    fprintf(stderr, "\nStarting act() with actions.size() = %ld\n", actions.size());
 
     window.create(sf::VideoMode(width, height), title);
 

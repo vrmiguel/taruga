@@ -30,7 +30,7 @@ void draw_spierpinski(taruga::Turtle& t, const int length, int depth)
 
 int main()
 {
-    taruga::Turtle turtle;
+    taruga::Turtle turtle(1200, 1000);
 
     int size = 1;
     while (size <= 250)

@@ -10,9 +10,8 @@ int main()
     int size = 1;
     while (size <= 500)
     {
-        turtle.forward(size);
+        turtle.forward(size++);
         turtle.turn_right(91);
-        size++;
     }
 
     turtle.act();
