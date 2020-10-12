@@ -202,13 +202,14 @@ enum class Instruction : uint8_t {
     PopState,                 //! Returns the turtle state to that of the top of the state stack
     PushState,                //! Saves the current turtle state to the state stack
     Screenshot,               //! Screenshot of the current
+    NewWalkingSpeed,          //! Sets a new walking speed
+    NewRotationSpeed,         //! Sets a new rotation speed
     //SpriteChangeColor,        //! Change the icon color to something else
     // Stamp,           //! Permanently stamp the sprite at the current position and rotation
 };
 
 union ActionData {
-    float  rot_angle;              //! Used when rotating
-    int32_t  walk_dist;            //! Used when walking forward or backwards
+    float  val;                    //! Used whenever we need a floating value passed on (walking, rotating or changing speeds)
     //sf::Vector2u next_pos;       //! Used for teleports (sets the turtle directly in next_pos)
     uint8_t next_color[3];         //! Used when changing icon color. Using an array here because sf::Color has non-trivial default constructor.
     bool pen_down;                 //! Used when setting the pen up or down.
@@ -232,7 +233,7 @@ struct State {
 struct Action {
     Instruction instr;
     ActionData  data;
-    Action(Instruction m_instr, ActionData m_data) : instr(m_instr), data(m_data) {};
+    Action(Instruction m_instr, const ActionData& m_data) : instr(m_instr), data(m_data) {};
 };
 
 //!
@@ -260,8 +261,8 @@ private:
     sf::Sprite         sprite;           //! The turtle's sprite.
     sf::Color          line_color;       //! The current color of the line the turtle draws
     sf::Event          event;            //! Checks for window events
-    bool               _pen_down;       //! If the pen is up, the turtle will not draw while walking around
-    uint8_t            walk_spd;         //! Turtle's current velocity
+    bool               _pen_down;        //! If the pen is up, the turtle will not draw while walking around
+    float              walk_spd;         //! Turtle's current velocity
     float              angle;            //! Turtle's current heading angle in [0, 360)
     float              rot_vel;          //! Turtle's rotational velocity
     uint16_t           width;            //! Rendering window width
@@ -279,12 +280,12 @@ private:
     void               _rotate(float);   //! Internal logic for rotating by a given amount of degrees
     void               _draw_all_lines(bool clear_screen = true); //! Draws all saved lines
 public:
-    Verbosity          verbosity;        //! Toggles the verbosity level (Quiet, Verbose or VeryVerbose).
 
-    void set_window_title(const std::string& new_title);
-    Turtle()                             : width(800),  height(600)  { init(); }
-    Turtle(uint16_t _wth, uint16_t _hgt) : width(_wth), height(_hgt) { init(); }
-    Turtle(const sf::Vector2u p)         : width(p.x),  height(p.y)  { init(); }
+    Verbosity          verbosity;        //! Toggles the verbosity level (Quiet, Verbose or VeryVerbose).
+    void set_window_title(const char* new_title);
+    Turtle()                               : width(800),  height(600)  { init(); }
+    Turtle(uint16_t _wth, uint16_t _hgt)   : width(_wth), height(_hgt) { init(); }
+    explicit Turtle(const sf::Vector2f& p) : width(p.x),  height(p.y)  { init(); }
     void save_to_image(const char *);  //! Saves the current window view to an image with the given filename
     void set_line_color(sf::Color);    //! Sets the new color of the line the turtle will draw.
     void set_line_color(u8, u8, u8);   //! Sets the new color of the line the turtle will draw.
@@ -293,15 +294,31 @@ public:
     void pen_down();                   //! Sets the pen down so that the turtle draws a line wherever it walks
     void set_icon(Icon);               //! Allows to switch around between the two built-in icons: turtle or straight arrow.
     void set_icon(sf::Texture);        //! Allows for any image to be used as an icon. Do notice that Taruga won't scale the texture. If needed, use the Turtle::scale method.
+    void go_to(float x, float y);      //! Transports the turtle to a new point (line not drawn)
+    void go_to(const sf::Vector2f);    //! Transports the turtle to a new point (line not drawn)
     void scale(float, float);          //! Scales the turtle sprite
     void forward(float units);         //! Walk forward the given amount of units.
     void backwards(float units);       //! Walk backwards the given amount of units. The same as using forward() with a negative parameter.
     void turn_right(float ang);        //! Turns right by the specified amount of degrees.
+    void set_walking_speed(float);     //! Sets a new walking speed
+    void set_rotation_speed(float);    //! Sets a new rotation speed
     void push_state();                 //! Saves the current state in a stack
     void pop_state();                  //! Returns the Turtle's state to the top of the state stack
     void turn_left(float ang);         //! Turns left by the specified amount of degrees.
     void act();                        //! Start moving the turtle. Will deplete the actions queue.
 };
+
+void Turtle::set_walking_speed(float new_speed)
+{
+    ActionData data; data.val = new_speed;
+    actions.push(Action(Instruction::NewWalkingSpeed, data));
+}
+
+void Turtle::set_rotation_speed(float new_speed)
+{
+    ActionData data; data.val = new_speed;
+    actions.push(Action(Instruction::NewRotationSpeed, data));
+}
 
 void Turtle::_pop_state()
 {
@@ -323,6 +340,8 @@ void Turtle::_pop_state()
     _draw_sprite();
     states.pop();
 }
+
+
 
 void Turtle::_push_state()
 {
@@ -401,15 +420,14 @@ void Turtle::turn_left(float deg)
 
 void Turtle::turn_right(float deg)
 {
-//    deg += deg < 0      ? 360. : 0.; //! If the angle is negative, we make it positive again
     deg -= deg >= 360.0 ? 360. : 0.; //! Likewise, we must decrease the angle if it's too big
-    ActionData data; data.rot_angle = deg;
+    ActionData data; data.val = deg;
     actions.push(Action(Instruction::Rotate, data));
 }
 
 void Turtle::forward(float units)
 {
-    ActionData data; data.walk_dist = units;
+    ActionData data; data.val = units;
     actions.push(Action(Instruction::Walk, data));
 }
 
@@ -577,7 +595,7 @@ void Turtle::init()
     this->y          = height/2;
     this->rot_vel    = 0.5;
     this->_pen_down = true;
-    this->walk_spd   = 1;
+    this->walk_spd   = 0.25;
     this->angle      = 0;
     this->line_color = sf::Color::Black;
 }
@@ -591,7 +609,7 @@ void Turtle::_idle()
     for (;;) { _draw_all_lines(); window.draw(sprite); window.display(); }
 }
 
-void Turtle::set_window_title(const std::string& new_title)
+void Turtle::set_window_title(const char * new_title)
 {
     this->window.setTitle(new_title);
 }
@@ -621,6 +639,7 @@ void Turtle::set_icon(Icon icon)
 //!
 void Turtle::act()
 {
+    window.setFramerateLimit(60);
     if (title.empty())
     {
         title = "Ruga Window";
@@ -633,7 +652,7 @@ void Turtle::act()
 
     if(verbosity >= Verbosity::Verbose)
     {
-        fprintf(stderr, "\nStarting act() with actions.size() = %ld\n", actions.size());
+        fprintf(stderr, "\nStarting act() with actions.size() = %lu\n", actions.size());
     }
 
     sprite.setPosition(x, y);
@@ -656,10 +675,10 @@ void Turtle::act()
         switch (current.instr)
         {
         case Instruction::Rotate:
-            _rotate(current.data.rot_angle);
+            _rotate(current.data.val);
             break;
         case Instruction::Walk:
-            _walk(current.data.walk_dist);
+            _walk(current.data.val);
             break;
         case Instruction::PenMovement:
             _pen_down = current.data.pen_down;
@@ -672,6 +691,12 @@ void Turtle::act()
             break;
         case Instruction::PushState:
             this->_push_state();
+            break;
+        case Instruction::NewWalkingSpeed:
+            this->walk_spd = current.data.val;
+            break;
+        case Instruction::NewRotationSpeed:
+            this->rot_vel = current.data.val;
             break;
         case Instruction::LineChangeColor:
             const auto newc = current.data.next_color;

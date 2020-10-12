@@ -1,4 +1,4 @@
-# taruga
+# taruga [![Codacy Badge](https://app.codacy.com/project/badge/Grade/438ef0f9e2bc4a579e816f186f0a2385)](https://www.codacy.com/gh/vrmiguel/taruga/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=vrmiguel/taruga&amp;utm_campaign=Badge_Grade) [![CodeFactor](https://www.codefactor.io/repository/github/vrmiguel/taruga/badge)](https://www.codefactor.io/repository/github/vrmiguel/taruga)
 
 Taruga is a work in progress single-header turtle graphics library written in C++11.
 
@@ -88,10 +88,10 @@ Taruga exposes a single namespace, contained within a single header file ([`taru
 The public methods that `taruga::Turtle` exposes are:
 
 ```cpp
-    void set_window_title(const std::string& new_title);
-    Turtle()                             : width(800),  height(600)  { init(); }
-    Turtle(uint16_t _wth, uint16_t _hgt) : width(_wth), height(_hgt) { init(); }
-    Turtle(const sf::Vector2u p)         : width(p.x),  height(p.y)  { init(); }
+    void set_window_title(const char* new_title);
+    Turtle();                          //! Default constructor. Makes a window size of 800x600 and sets the turtle to (400, 300).
+    Turtle(uint16_t width, uint16_t height); //! Makes a window size of width * height and sets the turtle (width/2, height/2).
+    explicit Turtle(const sf::Vector2f& p);  //! Makes a window size of p.x * p.y and sets the turtle (p.x/2, p.y/2).
     void save_to_image(const char *);  //! Saves the current window view to an image with the given filename
     void set_line_color(sf::Color);    //! Sets the new color of the line the turtle will draw.
     void set_line_color(u8, u8, u8);   //! Sets the new color of the line the turtle will draw.
@@ -104,6 +104,8 @@ The public methods that `taruga::Turtle` exposes are:
     void forward(float units);         //! Walk forward the given amount of units.
     void backwards(float units);       //! Walk backwards the given amount of units. The same as using forward() with a negative parameter.
     void turn_right(float ang);        //! Turns right by the specified amount of degrees.
+    void set_walking_speed(float);     //! Sets a new walking speed
+    void set_rotation_speed(float);    //! Sets a new rotation speed
     void push_state();                 //! Saves the current state in a stack
     void pop_state();                  //! Returns the Turtle's state to the top of the state stack
     void turn_left(float ang);         //! Turns left by the specified amount of degrees.
@@ -117,5 +119,3 @@ The code contained in this repo is [MIT](https://opensource.org/licenses/MIT)-li
 Turtle icon made by Freepik, available under the [Flaticon](https://www.flaticon.com/) license. 
 
 SFML is [zlib/libpng](https://opensource.org/licenses/Zlib)-licensed.
-
-
