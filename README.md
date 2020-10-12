@@ -74,7 +74,9 @@ The only dependencies are a C++11 conformant compiler and [SMFL](https://www.sfm
 Taruga has been built on SFML 2.5.1 and has also been tested on SFML 2.4.1. It may work on older versions of the library, but there are no guarantees.
 
 On Ubuntu-based distributions, you can install SFML with:
+
 ```sudo apt install libsfml-dev```
+
 On Fedora, with:
 ```dnf install SFML```
 
@@ -82,11 +84,10 @@ You can then build it ```g++ -O3 -std=c++11 your_program.cpp -lsfml-graphics -ls
 
 ## Usage
 
-Taruga exposes a single namespace, contained within a single header file.
+Taruga exposes a single namespace, contained within a single header file ([`taruga.hpp`](include/taruga.hpp)).
 The public methods that `taruga::Turtle` exposes are:
 
 ```cpp
-
     void set_window_title(const std::string& new_title);
     Turtle()                             : width(800),  height(600)  { init(); }
     Turtle(uint16_t _wth, uint16_t _hgt) : width(_wth), height(_hgt) { init(); }
@@ -100,17 +101,21 @@ The public methods that `taruga::Turtle` exposes are:
     void set_icon(Icon);               //! Allows to switch around between the two built-in icons: turtle or straight arrow.
     void set_icon(sf::Texture);        //! Allows for any image to be used as an icon. Do notice that Taruga won't scale the texture. If needed, use the Turtle::scale method.
     void scale(float, float);          //! Scales the turtle sprite
-    void forward(int32_t units);       //! Walk forward the given amount of units.
-    void backwards(int32_t units);     //! Walk backwards the given amount of units. The same as using forward() with a negative parameter.
+    void forward(float units);         //! Walk forward the given amount of units.
+    void backwards(float units);       //! Walk backwards the given amount of units. The same as using forward() with a negative parameter.
     void turn_right(float ang);        //! Turns right by the specified amount of degrees.
+    void push_state();                 //! Saves the current state in a stack
+    void pop_state();                  //! Returns the Turtle's state to the top of the state stack
     void turn_left(float ang);         //! Turns left by the specified amount of degrees.
-    void draw_circle();                //! Draw a circle at the current position
     void act();                        //! Start moving the turtle. Will deplete the actions queue.
 ```
 
 ## Licensing
 
 The code contained in this repo is [MIT](https://opensource.org/licenses/MIT)-licensed.
+
 Turtle icon made by Freepik, available under the [Flaticon](https://www.flaticon.com/) license. 
-SFML is [zlib/libpng](https://opensource.org/licenses/Zlib)-licensed
+
+SFML is [zlib/libpng](https://opensource.org/licenses/Zlib)-licensed.
+
 

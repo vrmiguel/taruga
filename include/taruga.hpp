@@ -33,6 +33,7 @@
 #include <SFML/Window/Event.hpp>
 
 #include <cmath>
+#include <stack>
 #include <queue>
 
 //! TODO:
@@ -188,7 +189,6 @@ enum class Verbosity : uint8_t {
     Quiet       = 1,
     Verbose     = 2,
     VeryVerbose = 3,
-    Debug       = 4
 };
 
 //!
@@ -199,6 +199,8 @@ enum class Instruction : uint8_t {
     Walk,                     //! Walks forwards (or backwards) by the given amount of units.
     PenMovement,              //! Puts the pen up or down.
     LineChangeColor,          //! Change the line color to something else
+    PopState,                 //! Returns the turtle state to that of the top of the state stack
+    PushState,                //! Saves the current turtle state to the state stack
     Screenshot,               //! Screenshot of the current
     //SpriteChangeColor,        //! Change the icon color to something else
     // Stamp,           //! Permanently stamp the sprite at the current position and rotation
@@ -206,11 +208,22 @@ enum class Instruction : uint8_t {
 
 union ActionData {
     float  rot_angle;              //! Used when rotating
-    int32_t  walk_dist;            //! Used when walking forwards or backwards
+    int32_t  walk_dist;            //! Used when walking forward or backwards
     //sf::Vector2u next_pos;       //! Used for teleports (sets the turtle directly in next_pos)
     uint8_t next_color[3];         //! Used when changing icon color. Using an array here because sf::Color has non-trivial default constructor.
     bool pen_down;                 //! Used when setting the pen up or down.
     const char * filename;
+};
+
+//!
+//! \brief The State struct is used when saving (or loading) the turtle state to (or from) the state stack
+//!
+struct State {
+    float x, y;
+    float angle;
+    bool  pen_state;        //! True if the pen is down, false if the pen is up
+    sf::Color line_color;
+    State(float _x, float _y, float _angle, bool _pen_state, sf::Color _color) : x(_x), y(_y), angle(_angle), pen_state(_pen_state), line_color(_color) {}
 };
 
 //!
@@ -236,17 +249,18 @@ struct Line
 
 class Turtle{
 private:
-    static constexpr double m_deg_to_rad = 3.14159265358979323846/180.0;
+    static constexpr double deg_to_rad = 3.14159265358979323846/180.0;
     void init();                         //! Initializes the variables with their default values
     std::vector<Line>  lines;            //! All lines to be drawn.
     sf::RenderWindow   window;           //! Window where the scene will be rendered
     std::string        title;            //! The window's title
     std::queue<Action> actions;          //! The queue of actions that the turtle is going to do.
+    std::stack<State>  states;           //! The stack of turtle states. Used with pop_state() and push_state().
     sf::Texture        texture;          //! The image to be used on the sprite. Kept in VRAM.
     sf::Sprite         sprite;           //! The turtle's sprite.
     sf::Color          line_color;       //! The current color of the line the turtle draws
     sf::Event          event;            //! Checks for window events
-    bool               m_pen_down;       //! If the pen is up, the turtle will not draw while walking around
+    bool               _pen_down;       //! If the pen is up, the turtle will not draw while walking around
     uint8_t            walk_spd;         //! Turtle's current velocity
     float              angle;            //! Turtle's current heading angle in [0, 360)
     float              rot_vel;          //! Turtle's rotational velocity
@@ -254,6 +268,8 @@ private:
     uint16_t           height;           //! Rendering window height
     float              x, y;             //! Current positions
 
+    void               _pop_state();     //! Internal logic to pop the state stack and return to a previous state
+    void               _push_state();    //! Internal logic to push the state stack in order to save the current state
     void               _save_to_image(const char *);  //! Save a screenshot
     void               _move_pen(bool);  //! Sets the pen up or down
     void               _draw_line(Line); //! Draws the given line
@@ -263,7 +279,7 @@ private:
     void               _rotate(float);   //! Internal logic for rotating by a given amount of degrees
     void               _draw_all_lines(bool clear_screen = true); //! Draws all saved lines
 public:
-    Verbosity          verbosity;        //! Toggles verbose output on or off.
+    Verbosity          verbosity;        //! Toggles the verbosity level (Quiet, Verbose or VeryVerbose).
 
     void set_window_title(const std::string& new_title);
     Turtle()                             : width(800),  height(600)  { init(); }
@@ -281,11 +297,50 @@ public:
     void forward(float units);         //! Walk forward the given amount of units.
     void backwards(float units);       //! Walk backwards the given amount of units. The same as using forward() with a negative parameter.
     void turn_right(float ang);        //! Turns right by the specified amount of degrees.
+    void push_state();                 //! Saves the current state in a stack
+    void pop_state();                  //! Returns the Turtle's state to the top of the state stack
     void turn_left(float ang);         //! Turns left by the specified amount of degrees.
-    //void dot();                        //! Print a dot in the current position, even if the pen is up.
-    void draw_circle();                //! Draw a circle at the current position
     void act();                        //! Start moving the turtle. Will deplete the actions queue.
 };
+
+void Turtle::_pop_state()
+{
+    if(states.empty())
+    {
+        if(verbosity >= Verbosity::Verbose)
+        {
+            fprintf(stderr, "pop_state() called with an empty state stack.\n");
+        }
+    }
+    const State backup_state = states.top();
+    this->x          = backup_state.x;
+    this->y          = backup_state.y;
+    this->angle      = backup_state.angle;
+    this->_pen_down = backup_state.pen_state;
+    this->line_color = backup_state.line_color;
+    sprite.setRotation(backup_state.angle);
+    sprite.setPosition(x, y);
+    _draw_sprite();
+    states.pop();
+}
+
+void Turtle::_push_state()
+{
+    State backup_state(x, y, angle, _pen_down, line_color);
+    states.push(backup_state);
+}
+
+void Turtle::pop_state()
+{
+    ActionData data;    //! We don't really have any data to use here
+    actions.push(Action(Instruction::PopState, data));
+}
+
+void Turtle::push_state()
+{
+    ActionData data;
+    actions.push(Action(Instruction::PushState, data));
+}
 
 void Turtle::save_to_image(const char * _filename)
 {
@@ -385,7 +440,7 @@ void Turtle::_draw_line(Line new_line)
 {
     _draw_all_lines();
 
-    if (m_pen_down)
+    if (_pen_down)
     {
         sf::Vertex line_vertices[2] = {
             sf::Vertex(sf::Vector2f(new_line.xi, new_line.yi)),
@@ -458,7 +513,7 @@ void Turtle::_walk(float distance)
         fprintf(stderr, "Turtle::_walk(%.2f) started. Current pos: (%0.2f, %0.2f). Current angle: %f\n", distance, this->x, this->y, angle);
     }
 
-    const float ang_rad = angle*m_deg_to_rad;   //! Converts the current angle to radians
+    const float ang_rad = angle*deg_to_rad;   //! Converts the current angle to radians
 
     const sf::Vector2f ep (x + sin(ang_rad) * distance, y - cos(ang_rad) * distance); //! ep := the final point
 
@@ -502,7 +557,7 @@ void Turtle::_walk(float distance)
     line.yf = y = ep.y;
     _draw_sprite();
 
-    if (m_pen_down) {
+    if (_pen_down) {
         //! We only need to save this line if the pen was down
         lines.push_back(line);
     }
@@ -521,7 +576,7 @@ void Turtle::init()
     this->x          = width/2;
     this->y          = height/2;
     this->rot_vel    = 0.5;
-    this->m_pen_down = true;
+    this->_pen_down = true;
     this->walk_spd   = 1;
     this->angle      = 0;
     this->line_color = sf::Color::Black;
@@ -607,17 +662,21 @@ void Turtle::act()
             _walk(current.data.walk_dist);
             break;
         case Instruction::PenMovement:
-            m_pen_down = current.data.pen_down;
+            _pen_down = current.data.pen_down;
             break;
         case Instruction::Screenshot:
             _save_to_image(current.data.filename);
+            break;
+        case Instruction::PopState:
+            this->_pop_state();
+            break;
+        case Instruction::PushState:
+            this->_push_state();
             break;
         case Instruction::LineChangeColor:
             const auto newc = current.data.next_color;
             this->line_color = sf::Color(newc[0], newc[1], newc[2]);
             break;
-//        case Instruction::SpriteChangeColor:
-//            break;
         }
     }
 }
