@@ -652,7 +652,7 @@ void Turtle::act()
 
     if(verbosity >= Verbosity::Verbose)
     {
-        fprintf(stderr, "\nStarting act() with actions.size() = %lu\n", actions.size());
+        fprintf(stderr, "\nStarting act() with actions.size() = %lu\n", (unsigned long) actions.size());
     }
 
     sprite.setPosition(x, y);
