@@ -70,7 +70,6 @@ Full source code for this example can be found [here](examples/koch.cpp).
 
 The only dependencies are a C++11 conformant compiler and [SMFL](https://www.sfml-dev.org/index.php), a small multimedia API with an installed size of around 10MB.
 
-
 Taruga has been built on SFML 2.5.1 and has also been tested on SFML 2.4.1. It may work on older versions of the library, but there are no guarantees.
 
 On Ubuntu-based distributions, you can install SFML with:
