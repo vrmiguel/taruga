@@ -60,6 +60,12 @@ We can set the turtle's pen up or down. This allows us to move the turtle withou
 
 Full source code for this example can be found [here](examples/regular_polygon.cpp). 
 
+### Drawing a Koch fractal
+
+![Koch](https://user-images.githubusercontent.com/36349314/95706813-4f190200-0c2e-11eb-8cdb-6d1ad3d00b89.png)
+
+Full source code for this example can be found [here](examples/koch.cpp).
+
 ## Dependencies and how to build
 
 The only dependencies are a C++11 conformant compiler and [SMFL](https://www.sfml-dev.org/index.php), a small multimedia API with an installed size of around 10MB.

@@ -1,7 +1,5 @@
 #include "include/taruga.hpp"
 
-//! Development file of Taruga. Will be deleted once this is no longer a WIP.
-
 void recursive_koch(taruga::Turtle& turtle, int length, int depth)
 {
     if(depth == 0)
@@ -21,7 +19,6 @@ void recursive_koch(taruga::Turtle& turtle, int length, int depth)
 int main()
 {
     taruga::Turtle turtle;
-    turtle.verbosity = taruga::Verbosity::VeryVerbose;
 
     turtle.pen_up();
     turtle.turn_right(90);

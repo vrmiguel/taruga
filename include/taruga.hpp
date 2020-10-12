@@ -1,5 +1,5 @@
 /*
- * libstring
+ * taruga
  * https://github.com/vrmiguel/taruga
  *
  * Copyright (c) 2020 Vinícius R. Miguel
@@ -252,14 +252,14 @@ private:
     float              rot_vel;          //! Turtle's rotational velocity
     uint16_t           width;            //! Rendering window width
     uint16_t           height;           //! Rendering window height
-    uint32_t           x, y;             //! Current positions
+    float              x, y;             //! Current positions
 
     void               _save_to_image(const char *);  //! Save a screenshot
     void               _move_pen(bool);  //! Sets the pen up or down
     void               _draw_line(Line); //! Draws the given line
     void               _draw_sprite();   //! Draws the sprite into the window
     void               _idle();          //! Keeps rendering a static scene. Runs when there are no more actions to do.
-    void               _walk(int32_t);   //! Internal logic for walking forward in the current heading angle
+    void               _walk(float);     //! Internal logic for walking forward in the current heading angle
     void               _rotate(float);   //! Internal logic for rotating by a given amount of degrees
     void               _draw_all_lines(bool clear_screen = true); //! Draws all saved lines
 public:
@@ -278,8 +278,8 @@ public:
     void set_icon(Icon);               //! Allows to switch around between the two built-in icons: turtle or straight arrow.
     void set_icon(sf::Texture);        //! Allows for any image to be used as an icon. Do notice that Taruga won't scale the texture. If needed, use the Turtle::scale method.
     void scale(float, float);          //! Scales the turtle sprite
-    void forward(int32_t units);       //! Walk forward the given amount of units.
-    void backwards(int32_t units);     //! Walk backwards the given amount of units. The same as using forward() with a negative parameter.
+    void forward(float units);         //! Walk forward the given amount of units.
+    void backwards(float units);       //! Walk backwards the given amount of units. The same as using forward() with a negative parameter.
     void turn_right(float ang);        //! Turns right by the specified amount of degrees.
     void turn_left(float ang);         //! Turns left by the specified amount of degrees.
     //void dot();                        //! Print a dot in the current position, even if the pen is up.
@@ -352,13 +352,13 @@ void Turtle::turn_right(float deg)
     actions.push(Action(Instruction::Rotate, data));
 }
 
-void Turtle::forward(int32_t units)
+void Turtle::forward(float units)
 {
     ActionData data; data.walk_dist = units;
     actions.push(Action(Instruction::Walk, data));
 }
 
-void Turtle::backwards(int32_t units)
+void Turtle::backwards(float units)
 {
     this->forward(-units);
 }
@@ -443,7 +443,7 @@ void Turtle::_rotate(float deg)
 
     if(verbosity == Verbosity::VeryVerbose)
     {
-        fprintf(stderr, "Turtle::_rotate(%.2f) finished. Current angle: %.2f. Current pos.: (%d, %d)\n", deg, this->angle, this->x, this->y);
+        fprintf(stderr, "Turtle::_rotate(%.2f) finished. Current angle: %.2f. Current pos.: (%0.2f, %0.2f)\n", deg, this->angle, this->x, this->y);
     }
 }
 
@@ -451,11 +451,11 @@ void Turtle::_rotate(float deg)
 //!
 //! \brief Turtle::_walk
 //!
-void Turtle::_walk(int32_t distance)
+void Turtle::_walk(float distance)
 {
     if (verbosity >= Verbosity::Verbose)
     {
-        fprintf(stderr, "Turtle::_walk(%d) started. Current pos: (%d, %d). Current angle: %f\n", distance, this->x, this->y, angle);
+        fprintf(stderr, "Turtle::_walk(%.2f) started. Current pos: (%0.2f, %0.2f). Current angle: %f\n", distance, this->x, this->y, angle);
     }
 
     const float ang_rad = angle*m_deg_to_rad;   //! Converts the current angle to radians
@@ -498,8 +498,8 @@ void Turtle::_walk(int32_t distance)
         window.display();
     }
     sprite.setPosition(ep); //! The loop above only gets us close to the correct end-point, so we'll get there correctly now
-    line.xf = ep.x;
-    line.yf = ep.y;
+    line.xf = x = ep.x;
+    line.yf = y = ep.y;
     _draw_sprite();
 
     if (m_pen_down) {
@@ -508,7 +508,7 @@ void Turtle::_walk(int32_t distance)
     }
 
     if(verbosity == Verbosity::VeryVerbose){
-        fprintf(stderr, "Turtle::_walk(%d) finished. Current pos: (%d, %d).\n", distance, this->x, this->y);
+        fprintf(stderr, "Turtle::_walk(%.2f) finished. Current pos: (%.2f, %.2f).\n", distance, this->x, this->y);
     }
 }
 
