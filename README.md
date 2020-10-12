@@ -8,7 +8,7 @@ Taruga is a work in progress single-header turtle graphics library written in C+
 
 ## Examples
 
-### Drawing a Spierpinski fractal
+### Drawing a Sierpinski fractal
 
 ![Sierpinski](https://user-images.githubusercontent.com/36349314/95699821-e2950780-0c1b-11eb-8fa9-15b2e913ecc5.png)
 
