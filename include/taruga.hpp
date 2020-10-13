@@ -209,7 +209,10 @@ enum class Instruction : uint8_t {
 };
 
 union ActionData {
-    float  val;                    //! Used whenever we need a floating value passed on (walking, rotating or changing speeds)
+    float  new_rotation_speed;     //! Used when setting a new rotation speed
+    float  new_walking_speed;      //! Used when setting a new walking speed
+    float  walking_distance;       //! Used when setting walking forward or backwards
+    float  rotation_angle;         //! Used when rotating
     //sf::Vector2u next_pos;       //! Used for teleports (sets the turtle directly in next_pos)
     uint8_t next_color[3];         //! Used when changing icon color. Using an array here because sf::Color has non-trivial default constructor.
     bool pen_down;                 //! Used when setting the pen up or down.
@@ -306,17 +309,23 @@ public:
     void pop_state();                  //! Returns the Turtle's state to the top of the state stack
     void turn_left(float ang);         //! Turns left by the specified amount of degrees.
     void act();                        //! Start moving the turtle. Will deplete the actions queue.
+    std::queue<Action> get_queue();    //! Returns a copy of the action queue. Used by the interpreter
 };
+
+std::queue<Action> Turtle::get_queue()
+{
+    return actions;
+}
 
 void Turtle::set_walking_speed(float new_speed)
 {
-    ActionData data; data.val = new_speed;
+    ActionData data; data.new_walking_speed = new_speed;
     actions.push(Action(Instruction::NewWalkingSpeed, data));
 }
 
 void Turtle::set_rotation_speed(float new_speed)
 {
-    ActionData data; data.val = new_speed;
+    ActionData data; data.new_rotation_speed = new_speed;
     actions.push(Action(Instruction::NewRotationSpeed, data));
 }
 
@@ -421,13 +430,13 @@ void Turtle::turn_left(float deg)
 void Turtle::turn_right(float deg)
 {
     deg -= deg >= 360.0 ? 360. : 0.; //! Likewise, we must decrease the angle if it's too big
-    ActionData data; data.val = deg;
+    ActionData data; data.rotation_angle = deg;
     actions.push(Action(Instruction::Rotate, data));
 }
 
 void Turtle::forward(float units)
 {
-    ActionData data; data.val = units;
+    ActionData data; data.walking_distance = units;
     actions.push(Action(Instruction::Walk, data));
 }
 
@@ -652,7 +661,7 @@ void Turtle::act()
 
     if(verbosity >= Verbosity::Verbose)
     {
-        fprintf(stderr, "\nStarting act() with actions.size() = %lu\n", actions.size());
+        fprintf(stderr, "\nStarting act() with actions.size() = %lu\n", (unsigned long) actions.size());
     }
 
     sprite.setPosition(x, y);
@@ -670,15 +679,15 @@ void Turtle::act()
         //! _idle until user closes the window
         if(actions.empty()) { _idle(); } //! TODO: check events within _idle
 
-        Action current = actions.front();  actions.pop();
+        Action &current = actions.front();
 
         switch (current.instr)
         {
         case Instruction::Rotate:
-            _rotate(current.data.val);
+            _rotate(current.data.rotation_angle);
             break;
         case Instruction::Walk:
-            _walk(current.data.val);
+            _walk(current.data.walking_distance);
             break;
         case Instruction::PenMovement:
             _pen_down = current.data.pen_down;
@@ -693,17 +702,20 @@ void Turtle::act()
             this->_push_state();
             break;
         case Instruction::NewWalkingSpeed:
-            this->walk_spd = current.data.val;
+            this->walk_spd = current.data.new_walking_speed;
             break;
         case Instruction::NewRotationSpeed:
-            this->rot_vel = current.data.val;
+            this->rot_vel = current.data.new_rotation_speed;
             break;
         case Instruction::LineChangeColor:
             const auto newc = current.data.next_color;
             this->line_color = sf::Color(newc[0], newc[1], newc[2]);
             break;
         }
+         actions.pop();
     }
 }
-}
+
+}   //! <- This brace closes the namespace
+
 #endif

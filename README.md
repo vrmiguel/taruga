@@ -3,12 +3,12 @@
 Taruga is a work in progress single-header turtle graphics library written in C++11.
 
 <p align="center">
-  <img src="gif/spiral.gif?raw=true" alt="Sublime's custom image"/>
+  <img src="https://user-images.githubusercontent.com/36349314/95826050-236a4a80-0d08-11eb-8032-a8644704e423.gif" alt="Spiral"/>
 </p>
 
 ## Examples
 
-### Drawing a Spierpinski fractal
+### Drawing a Sierpinski fractal
 
 ![Sierpinski](https://user-images.githubusercontent.com/36349314/95699821-e2950780-0c1b-11eb-8fa9-15b2e913ecc5.png)
 
