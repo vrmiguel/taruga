@@ -32,11 +32,11 @@ public:
             {
             case Instruction::Walk:
                 current.data.walking_distance < 0 ? fprintf(outputf, "b ") : fprintf(outputf, "f ");
-                fprintf(outputf, "%.3f\n", std::abs(current.data.walking_distance));
+                fprintf(outputf, "%.3f\n", std::fabs(current.data.walking_distance));
             break;
             case Instruction::Rotate:
                 current.data.rotation_angle < 0 ? fprintf(outputf, "l ") : fprintf(outputf, "r ");
-                fprintf(outputf, "%.3f\n", std::abs(current.data.rotation_angle));
+                fprintf(outputf, "%.3f\n", std::fabs(current.data.rotation_angle));
             break;
             case Instruction::PopState:
                 fprintf(outputf, "pop\n");

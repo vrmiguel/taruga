@@ -1,4 +1,4 @@
-#taruga-interpreter
+# Taruga Interpreter 
 
 This is still in super early stages!
 Will eventually be an interpreter for Taruga scripts.
