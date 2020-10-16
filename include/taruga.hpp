@@ -256,6 +256,7 @@ private:
     static constexpr double deg_to_rad = 3.14159265358979323846/180.0;
     void init();                         //! Initializes the variables with their default values
     std::vector<Line>  lines;            //! All lines to be drawn.
+    sf::ContextSettings settings;        //! Window's settings
     sf::RenderWindow   window;           //! Window where the scene will be rendered
     std::string        title;            //! The window's title
     std::queue<Action> actions;          //! The queue of actions that the turtle is going to do.
@@ -665,8 +666,10 @@ void Turtle::act()
     }
 
     sprite.setPosition(x, y);
+    
+    settings.antialiasingLevel = 8;
 
-    window.create(sf::VideoMode(width, height), title);
+    window.create(sf::VideoMode(width, height), title, sf::Style::Default, settings);
 
     while (window.isOpen())
     {
