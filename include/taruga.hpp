@@ -38,8 +38,6 @@
 
 //! TODO:
 //! Decide whether or not to include a second built-in icon
-//! Make sure lines before drawn are still drawn once the pen goes up. (That is, old ones remains, but no new ones come up)
-//! ?? Test more
 
 //! Holds a 32x32 PNG cute turtle icon
 static const uint8_t __turtle_png[1479] = {
@@ -179,12 +177,12 @@ enum class Icon : bool {
     Arrow,
 };
 
+typedef uint8_t u8;
+
+
 //!
 //! \brief The Verbosity enum defines the different options for console output verbosity
 //!
-
-typedef uint8_t u8;
-
 enum class Verbosity : uint8_t {
     Quiet       = 1,
     Verbose     = 2,
@@ -208,17 +206,6 @@ enum class Instruction : uint8_t {
     // Stamp,           //! Permanently stamp the sprite at the current position and rotation
 };
 
-union ActionData {
-    float  new_rotation_speed;     //! Used when setting a new rotation speed
-    float  new_walking_speed;      //! Used when setting a new walking speed
-    float  walking_distance;       //! Used when setting walking forward or backwards
-    float  rotation_angle;         //! Used when rotating
-    //sf::Vector2u next_pos;       //! Used for teleports (sets the turtle directly in next_pos)
-    uint8_t next_color[3];         //! Used when changing icon color. Using an array here because sf::Color has non-trivial default constructor.
-    bool pen_down;                 //! Used when setting the pen up or down.
-    const char * filename;
-};
-
 //!
 //! \brief The State struct is used when saving (or loading) the turtle state to (or from) the state stack
 //!
@@ -231,12 +218,23 @@ struct State {
 };
 
 //!
-//! \brief The Action struct
+//! \brief The Action struct represents a Taruga action, e.g. walking forward, turning right, etc.
 //!
 struct Action {
+    union Data {
+        float  new_rotation_speed;     //! Used when setting a new rotation speed
+        float  new_walking_speed;      //! Used when setting a new walking speed
+        float  walking_distance;       //! Used when setting walking forward or backwards
+        float  rotation_angle;         //! Used when rotating
+        //sf::Vector2u next_pos;       //! Used for teleports (sets the turtle directly in next_pos)
+        uint8_t next_color[3];         //! Used when changing icon color. Using an array here because sf::Color has non-trivial default constructor.
+        bool pen_down;                 //! Used when setting the pen up or down.
+        const char * filename;
+    };
+
     Instruction instr;
-    ActionData  data;
-    Action(Instruction m_instr, const ActionData& m_data) : instr(m_instr), data(m_data) {};
+    Data  data;
+    Action(Instruction m_instr, const Data& m_data) : instr(m_instr), data(m_data) {};
 };
 
 //!
@@ -244,6 +242,8 @@ struct Action {
 //!
 struct Line
 {
+    //! (xi, yi) is the initial point
+    //! (xf, yf) is the destination point
     float xi, yi, xf, yf;
     sf::Color color;
     Line(float _xi, float _yi) : xi(_xi), yi(_yi) {};
@@ -319,13 +319,13 @@ std::queue<Action> Turtle::get_queue()
 
 void Turtle::set_walking_speed(float new_speed)
 {
-    ActionData data; data.new_walking_speed = new_speed;
+    Action::Data data; data.new_walking_speed = new_speed;
     actions.push(Action(Instruction::NewWalkingSpeed, data));
 }
 
 void Turtle::set_rotation_speed(float new_speed)
 {
-    ActionData data; data.new_rotation_speed = new_speed;
+    Action::Data data; data.new_rotation_speed = new_speed;
     actions.push(Action(Instruction::NewRotationSpeed, data));
 }
 
@@ -342,15 +342,13 @@ void Turtle::_pop_state()
     this->x          = backup_state.x;
     this->y          = backup_state.y;
     this->angle      = backup_state.angle;
-    this->_pen_down = backup_state.pen_state;
+    this->_pen_down  = backup_state.pen_state;
     this->line_color = backup_state.line_color;
     sprite.setRotation(backup_state.angle);
     sprite.setPosition(x, y);
     _draw_sprite();
     states.pop();
 }
-
-
 
 void Turtle::_push_state()
 {
@@ -360,19 +358,19 @@ void Turtle::_push_state()
 
 void Turtle::pop_state()
 {
-    ActionData data;    //! We don't really have any data to use here
+    Action::Data data;    //! We don't really have any data to use here
     actions.push(Action(Instruction::PopState, data));
 }
 
 void Turtle::push_state()
 {
-    ActionData data;
+    Action::Data data;
     actions.push(Action(Instruction::PushState, data));
 }
 
 void Turtle::save_to_image(const char * _filename)
 {
-    ActionData data; data.filename = _filename;
+    Action::Data data; data.filename = _filename;
     actions.push(Action(Instruction::Screenshot, data));
 }
 
@@ -391,7 +389,7 @@ void Turtle::_save_to_image(const char * filename)
 
 void Turtle::_move_pen(bool m_pen_down)
 {
-    ActionData data; data.pen_down = m_pen_down;
+    Action::Data data; data.pen_down = m_pen_down;
     actions.push(Action(Instruction::PenMovement, data));
 }
 
@@ -412,7 +410,7 @@ void Turtle::set_line_color(sf::Color color)
 
 void Turtle::set_line_color(u8 r, u8 g, u8 b)
 {
-    ActionData data;
+    Action::Data data;
     data.next_color[0] = r; data.next_color[1] = g; data.next_color[2] = b;
     actions.push(Action(Instruction::LineChangeColor, data));
 }
@@ -430,13 +428,13 @@ void Turtle::turn_left(float deg)
 void Turtle::turn_right(float deg)
 {
     deg -= deg >= 360.0 ? 360. : 0.; //! Likewise, we must decrease the angle if it's too big
-    ActionData data; data.rotation_angle = deg;
+    Action::Data data; data.rotation_angle = deg;
     actions.push(Action(Instruction::Rotate, data));
 }
 
 void Turtle::forward(float units)
 {
-    ActionData data; data.walking_distance = units;
+    Action::Data data; data.walking_distance = units;
     actions.push(Action(Instruction::Walk, data));
 }
 
@@ -483,27 +481,24 @@ void Turtle::_draw_line(Line new_line)
 
 void Turtle::_draw_sprite()
 {
-   //
-//    sprite.setRotation(this->angle);
     _draw_all_lines();
     window.draw(sprite);
     window.display();
 }
 
 //!
-//! \brief Turtle::_rotate
+//! \brief Turtle::_rotate is the internal function that rotates the sprite.
 //!
 void Turtle::_rotate(float deg)
 {
-//    auto cur_pos = sprite.getLocalBounds();
-
     if(verbosity >= Verbosity::Verbose)
     {
         fprintf(stderr, "Turtle::_rotate(%.2f) started. Current angle: %.2f.\n", deg, this->angle);
     }
 
     sprite.setOrigin(16, 16);
-    const float obj = this->angle + deg;    //! Final angle to be had
+    //! At the end of the procedure, the final angle must be equal to `obj`.
+    const float obj = this->angle + deg;
     if (deg > 0)
     {
         for (; this->angle < obj; this->angle+=this->rot_vel)
@@ -520,8 +515,10 @@ void Turtle::_rotate(float deg)
     }
 
     //! The angles need to be in the [0, 360) range
-    this->angle += this->angle < 0      ? 360. : 0.; //! If the angle is negative, we make it positive again
-    this->angle -= this->angle >= 360.0 ? 360. : 0.; //! Likewise, we must decrease the angle if it's too big
+    //! If the angle is negative, we make it positive again
+    this->angle += this->angle < 0      ? 360. : 0.;
+    //! Likewise, we must decrease the angle if it's too big
+    this->angle -= this->angle >= 360.0 ? 360. : 0.;
 
     if(verbosity == Verbosity::VeryVerbose)
     {
@@ -531,7 +528,9 @@ void Turtle::_rotate(float deg)
 
 
 //!
-//! \brief Turtle::_walk
+//! \brief Turtle::_walk is the internal function that animates the walking of the turtle.
+//! Note: This function does not draw a straight line during its mid-steps (but arrives where it needs to arrive in the end) and that is an intentional choice.
+//! If you'd like to make your turtle move straight in the direction it needs to go, update the midsteps with the same calculation used on `ep`.
 //!
 void Turtle::_walk(float distance)
 {
@@ -540,9 +539,11 @@ void Turtle::_walk(float distance)
         fprintf(stderr, "Turtle::_walk(%.2f) started. Current pos: (%0.2f, %0.2f). Current angle: %f\n", distance, this->x, this->y, angle);
     }
 
-    const float ang_rad = angle*deg_to_rad;   //! Converts the current angle to radians
+    //! Converts the current angle to radians
+    const float ang_rad = angle*deg_to_rad;
 
-    const sf::Vector2f ep (x + sin(ang_rad) * distance, y - cos(ang_rad) * distance); //! ep := the final point
+    //! ep := the final point
+    const sf::Vector2f ep (x + sin(ang_rad) * distance, y - cos(ang_rad) * distance);
 
     float x_spd = 0., y_spd = 0.f;   //! The speed in which the turtle will walk in the x and y direction
     int   x_iters = 0, y_iters = 0;  //! How many times we'll update each coordinate
@@ -556,7 +557,8 @@ void Turtle::_walk(float distance)
 
     x_iters = std::abs((x - ep.x)/walk_spd);   //! Approximately how many times we'll have to update the x-coord.
 
-    if (y > ep.y)                    //! The same logic applies to the y-coordinate
+    //! The same logic applies to the y-coordinate
+    if (y > ep.y)
     {
         y_spd = -walk_spd;
     } else if (y < ep.y)
@@ -564,11 +566,12 @@ void Turtle::_walk(float distance)
         y_spd = walk_spd;
     }
 
-    y_iters = std::abs((y - ep.y)/walk_spd);
+    y_iters = std::abs((y - ep.y)/walk_spd); //! Approximately how many times we'll have to update the y-coord.
 
     Line line(x, y, this->line_color);
 
-    //! TODO: use the same formula used on `ep` to calculate middle-steps
+    //! As cited before, this will make the turtle walked in a "crooked" way, but at the end, his position and the line drawn will be correct.
+    //! I prefer this as, in most cases, the movement done by the turtle looks similar to that of the threading of a needle, which I think is aesthetically pleasing.
     while((x_iters >= 0) || (y_iters >= 0))
     {
         if (x_iters-- >= 0) { x += x_spd; }
@@ -579,12 +582,15 @@ void Turtle::_walk(float distance)
         window.draw(sprite);
         window.display();
     }
-    sprite.setPosition(ep); //! The loop above only gets us close to the correct end-point, so we'll get there correctly now
+
+    //! The loop above may only get us close to the correct end-point, so we'll guarantee that we're getting there correctly now.
+    sprite.setPosition(ep);
     line.xf = x = ep.x;
     line.yf = y = ep.y;
     _draw_sprite();
 
-    if (_pen_down) {
+    if (_pen_down)
+    {
         //! We only need to save this line if the pen was down
         lines.push_back(line);
     }
@@ -603,7 +609,7 @@ void Turtle::init()
     this->x          = width/2;
     this->y          = height/2;
     this->rot_vel    = 0.5;
-    this->_pen_down = true;
+    this->_pen_down  = true;
     this->walk_spd   = 0.25;
     this->angle      = 0;
     this->line_color = sf::Color::Black;
@@ -674,9 +680,8 @@ void Turtle::act()
         {
             if (event.type == sf::Event::Closed) { window.close(); }
         }
-//        sprite.setPosition(x, y);
 
-        //! _idle until user closes the window
+        //! If there are no more actions to do, idle until user closes the window
         if(actions.empty()) { _idle(); } //! TODO: check events within _idle
 
         Action &current = actions.front();
