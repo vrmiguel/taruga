@@ -14,7 +14,7 @@ Taruga is a work in progress single-header turtle graphics library written in C+
 
 With the simple Turtle directives, we can build complex fractals!
 
-Full source code for this example can be found [here](examples/spiral.cpp).
+Full source code for this example can be found [here](examples/sierpinski.cpp).
 
 ### Drawing a spiral 
 
