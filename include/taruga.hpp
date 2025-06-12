@@ -620,7 +620,7 @@ void Turtle::init()
 //!
 void Turtle::_idle()
 {
-    for (;;) 
+    while (window.isOpen()) 
     { 
         // Check for window events
         while (window.pollEvent(event))
