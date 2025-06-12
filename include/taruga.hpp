@@ -31,6 +31,7 @@
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/Window/Event.hpp>
+#include <SFML/System/Sleep.hpp>
 
 #include <cmath>
 #include <stack>
@@ -620,13 +621,23 @@ void Turtle::init()
 //!
 void Turtle::_idle()
 {
-    auto handleEvents = [this]() {
+    bool window_has_focus = true;
+    
+    auto handleEvents = [this, &window_has_focus]() {
         while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed)
             {
                 window.close();
                 return;
+            }
+            else if (event.type == sf::Event::LostFocus)
+            {
+                window_has_focus = false;
+            }
+            else if (event.type == sf::Event::GainedFocus)
+            {
+                window_has_focus = true;
             }
         }
     };
@@ -635,9 +646,18 @@ void Turtle::_idle()
     {
         handleEvents();
         
-        _draw_all_lines();
-        window.draw(sprite);
-        window.display();
+        // Only render when the window has focus
+        if (window_has_focus)
+        {
+            _draw_all_lines();
+            window.draw(sprite);
+            window.display();
+        }
+        else
+        {
+            // When window doesn't have focus, sleep to reduce CPU usage
+            sf::sleep(sf::milliseconds(100));
+        }
     }
 }
 
@@ -691,11 +711,21 @@ void Turtle::act()
 
     window.create(sf::VideoMode(width, height), title);
 
+    bool window_has_focus = true;
+    
     while (window.isOpen())
     {
         while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed) { window.close(); }
+            else if (event.type == sf::Event::LostFocus) { window_has_focus = false; }
+            else if (event.type == sf::Event::GainedFocus) { window_has_focus = true; }
+        }
+        
+        // Skip rendering if window doesn't have focus
+        if (!window_has_focus) {
+            sf::sleep(sf::milliseconds(100));
+            continue;
         }
 
         //! If there are no more actions to do, idle until user closes the window
