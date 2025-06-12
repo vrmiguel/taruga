@@ -620,8 +620,7 @@ void Turtle::init()
 //!
 void Turtle::_idle()
 {
-    while (window.isOpen())
-    {
+    auto handleEvents = [this]() {
         while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed)
@@ -630,6 +629,11 @@ void Turtle::_idle()
                 return;
             }
         }
+    };
+
+    while (window.isOpen())
+    {
+        handleEvents();
         
         _draw_all_lines();
         window.draw(sprite);
