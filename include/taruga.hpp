@@ -296,7 +296,7 @@ public:
     void pen_up();                     //! Sets the pen up so lines don't get drawn
     void pen_down();                   //! Sets the pen down so that the turtle draws a line wherever it walks
     void set_icon(Icon);               //! Allows to switch around between the two built-in icons: turtle or straight arrow.
-    void set_icon(sf::Texture);        //! Allows for any image to be used as an icon. Do notice that Taruga won't scale the texture. If needed, use the Turtle::scale method.
+    void set_icon(const sf::Texture&); //! Allows for any image to be used as an icon. Do notice that Taruga won't scale the texture. If needed, use the Turtle::scale method.
     void go_to(float x, float y);      //! Transports the turtle to a new point (line not drawn)
     void go_to(const sf::Vector2f);    //! Transports the turtle to a new point (line not drawn)
     void scale(float, float);          //! Scales the turtle sprite
@@ -629,11 +629,10 @@ void Turtle::set_window_title(const char * new_title)
     this->window.setTitle(new_title);
 }
 
-void Turtle::set_icon(sf::Texture t)
+void Turtle::set_icon(const sf::Texture& t)
 {
-    //! TODO: check lifetime
     texture = t;
-    sprite.setTexture(t);
+    sprite.setTexture(texture);
 }
 
 void Turtle::set_icon(Icon icon)
