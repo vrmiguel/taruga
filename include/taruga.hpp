@@ -620,8 +620,21 @@ void Turtle::init()
 //!
 void Turtle::_idle()
 {
-    //! TODO: check for window events here
-    for (;;) { _draw_all_lines(); window.draw(sprite); window.display(); }
+    for (;;) 
+    { 
+        while (window.pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed) 
+            { 
+                window.close();
+                return;
+            }
+        }
+        
+        _draw_all_lines(); 
+        window.draw(sprite); 
+        window.display(); 
+    }
 }
 
 void Turtle::set_window_title(const char * new_title)
