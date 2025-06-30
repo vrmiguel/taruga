@@ -620,8 +620,17 @@ void Turtle::init()
 //!
 void Turtle::_idle()
 {
-    //! TODO: check for window events here
-    for (;;) { _draw_all_lines(); window.draw(sprite); window.display(); }
+    while (window.isOpen()) {
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+                return;
+            }
+        }
+        _draw_all_lines(); 
+        window.draw(sprite); 
+        window.display();
+    }
 }
 
 void Turtle::set_window_title(const char * new_title)
@@ -682,7 +691,7 @@ void Turtle::act()
         }
 
         //! If there are no more actions to do, idle until user closes the window
-        if(actions.empty()) { _idle(); } //! TODO: check events within _idle
+        if(actions.empty()) { _idle(); }
 
         Action &current = actions.front();
 
